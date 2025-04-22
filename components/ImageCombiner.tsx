@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert
-import { Save, Upload, ZoomIn, Move, Video, Image as ImageIcon, AlertTriangle } from 'lucide-react'; // Added icons
+import { Save, ZoomIn, Move, Video, Image as ImageIcon, AlertTriangle } from 'lucide-react'; // Added icons
 import { GeminiImageEditor } from './gemini-image-editor';
 import { MediaInput } from './media-input'; // Import the new MediaInput
 
@@ -128,10 +128,10 @@ export default function ImageCombiner() {
         const percentDeltaX = (deltaX / container.offsetWidth) * 100;
         const percentDeltaY = (deltaY / container.offsetHeight) * 100;
 
-        setLogoPosition(prev => ({
-            x: clamp(initialDragPos.x + percentDeltaX, 0, 100), // Clamp percentage
-            y: clamp(initialDragPos.y + percentDeltaY, 0, 100), // Clamp percentage
-        }));
+        setLogoPosition({
+            x: clamp(initialDragPos.x + percentDeltaX, 0, 100),
+            y: clamp(initialDragPos.y + percentDeltaY, 0, 100),
+        });
     }
      // Note: We don't update dragStart here for smoother relative dragging from initial point
   }, [activeDrag, dragStart, initialDragPos]);

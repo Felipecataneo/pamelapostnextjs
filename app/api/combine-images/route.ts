@@ -1,6 +1,5 @@
 // src/app/api/combine-images/route.ts
 import { NextResponse } from 'next/server';
-import { createCanvas, loadImage, Canvas } from 'canvas';
 import { processCompositeImage } from '@/lib/image-processor';
 
 

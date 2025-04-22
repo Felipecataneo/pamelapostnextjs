@@ -184,20 +184,31 @@ export async function processCompositeImage(params: CompositeImageParams): Promi
         ctx.drawImage(logoImg, logoDrawX, logoDrawY, targetLogoWidth, targetLogoHeight);
         console.log("Logo Drawn Successfully.");
 
-      } catch (logoError: any) {
-        console.error("Error loading or drawing logo:", logoError.message || logoError);
+      } catch (logoError) {
+        const logoErrorMessage = logoError instanceof Error ? logoError.message : String(logoError);
+        console.error("Error loading or drawing logo:", logoErrorMessage);
+        // Optionally add stack trace if it's an Error
+        if (logoError instanceof Error) {
+            console.error("Logo Error Stack:", logoError.stack);
+        }
       }
     }
 
     console.log("\n--- Image Processing Complete ---");
     return canvas.toBuffer('image/png');
 
-  } catch (error: any) {
+  } catch (error) {
       console.error("--- Error in processCompositeImage ---");
-      console.error("Error Message:", error.message || error);
-      console.error("Error Stack:", error.stack);
-       console.error("Processing Params:", JSON.stringify(params, null, 2)); // Log params again on error
-      // Re-throw or return an error state if needed by the API route
-      throw new Error(`Image processing failed: ${error.message}`);
+      // FIX: Check type before accessing properties
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("Error Message:", errorMessage);
+      if (error instanceof Error) {
+          console.error("Error Stack:", error.stack);
+      } else {
+          console.error("Caught error object:", error);
+      }
+      console.error("Processing Params:", JSON.stringify(params, null, 2));
+      // Throw a new Error with the specific message
+      throw new Error(`Image processing failed: ${errorMessage}`);
   }
 }
