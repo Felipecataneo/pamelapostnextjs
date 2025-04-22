@@ -19,9 +19,7 @@ export default function Home() {
         {/* ImageCombiner now contains most of the UI */}
         <ImageCombiner />
 
-        <footer className="mt-12 md:mt-16 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} - Seu App de Combinação</p>
-        </footer>
+
       </div>
     </main>
   );
