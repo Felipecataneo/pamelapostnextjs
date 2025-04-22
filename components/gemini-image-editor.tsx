@@ -6,13 +6,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MediaInput } from "@/components/media-input"; // Importa o componente de input de imagem
+import { MediaInput } from "@/components/media-input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from 'lucide-react'; // Ícone para o Alert
+import { Terminal } from 'lucide-react';
 
-
-
-// Importa a Server Action
 import { generateImageWithGemini } from "@/app/actions";
 
 export function GeminiImageEditor() {
@@ -21,7 +18,7 @@ export function GeminiImageEditor() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [apiMessage, setApiMessage] = useState<string | null>(null); // Para mensagens de texto da API
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
 
   const handleSourceImageUpload = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -29,13 +26,13 @@ export function GeminiImageEditor() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setSourceImageUrl(reader.result as string);
-        setGeneratedImageUrl(null); // Limpa resultado anterior ao carregar nova imagem
+        setGeneratedImageUrl(null);
         setError(null);
         setApiMessage(null);
       };
       reader.readAsDataURL(file);
     }
-    event.target.value = ''; // Limpa para permitir re-upload
+    event.target.value = '';
   }, []);
 
   const handleGenerate = async () => {
@@ -49,13 +46,14 @@ export function GeminiImageEditor() {
     setGeneratedImageUrl(null);
     setApiMessage(null);
 
+    // Using the action directly
     const result = await generateImageWithGemini(prompt, sourceImageUrl);
 
     if (result.success && result.imageUrl) {
       setGeneratedImageUrl(result.imageUrl);
-      if (result.message) setApiMessage(result.message); // Mostra texto da API se houver
+      if (result.message) setApiMessage(result.message);
     } else {
-      setError(result.message || "Ocorreu um erro desconhecido.");
+      setError(result.message || "Ocorreu um erro desconhecido ao gerar a imagem.");
     }
 
     setIsLoading(false);
@@ -65,7 +63,10 @@ export function GeminiImageEditor() {
     if (!generatedImageUrl) return;
     const link = document.createElement('a');
     link.href = generatedImageUrl;
-    link.download = 'imagem-editada-gemini.png'; // Ou extrair o tipo mime da data url
+    // Extract mime type for better filename, fallback to png
+    const mimeMatch = generatedImageUrl.match(/^data:(image\/(.+));base64,/);
+    const extension = mimeMatch ? mimeMatch[2] : 'png';
+    link.download = `imagem-editada-gemini.${extension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -76,21 +77,21 @@ export function GeminiImageEditor() {
       <CardHeader>
         <CardTitle>Edição Rápida com IA</CardTitle>
         <CardDescription>
-          Carregue uma imagem, descreva a edição desejada (ex: adicione um chapéu de festa no gato) e clique em Gerar.
+          Carregue uma imagem, descreva a edição (ex: adicione um chapéu de festa) e clique em Gerar.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Input da Imagem Fonte */}
         <MediaInput
           id="sourceImageGemini"
           label="Imagem Original"
           onMediaUpload={handleSourceImageUpload}
+          accept='image/*' // Only images for Gemini edit
         />
 
-        {/* Preview da Imagem Fonte (Opcional mas útil) */}
         {sourceImageUrl && (
            <div className="mt-4">
              <Label>Preview Original:</Label>
+             {/* eslint-disable-next-line @next/next/no-img-element */}
              <img
                 src={sourceImageUrl}
                 alt="Preview Imagem Original"
@@ -99,21 +100,18 @@ export function GeminiImageEditor() {
            </div>
         )}
 
-
-        {/* Input do Prompt */}
         <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="promptGemini">O que você quer fazer com a imagem?</Label>
           <Input
             id="promptGemini"
             type="text"
-            placeholder="Ex: adicione um fundo de praia, transforme em pintura a óleo..."
+            placeholder="Ex: adicione um fundo de praia, transforme em pintura..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             disabled={isLoading}
           />
         </div>
 
-        {/* Exibição de Erros ou Mensagens da API */}
         {error && (
           <Alert variant="destructive">
             <Terminal className="h-4 w-4" />
@@ -121,7 +119,7 @@ export function GeminiImageEditor() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-         {apiMessage && !error && ( // Mostra mensagens da API se não houver erro
+         {apiMessage && !error && (
           <Alert variant="default">
             <Terminal className="h-4 w-4" />
             <AlertTitle>Mensagem da IA</AlertTitle>
@@ -129,7 +127,6 @@ export function GeminiImageEditor() {
           </Alert>
         )}
 
-        {/* Resultado da Imagem Gerada */}
         {isLoading && (
           <div className="flex justify-center items-center p-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -139,10 +136,11 @@ export function GeminiImageEditor() {
         {generatedImageUrl && !isLoading && (
           <div className="mt-4">
             <Label>Imagem Editada:</Label>
-            <img // Usar <img> normal para Data URL funciona bem
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={generatedImageUrl}
               alt="Imagem Editada pela IA"
-              className="mt-2 rounded-md border max-w-full h-auto max-h-96 object-contain" // Maior que o preview
+              className="mt-2 rounded-md border max-w-full h-auto max-h-96 object-contain"
             />
           </div>
         )}
