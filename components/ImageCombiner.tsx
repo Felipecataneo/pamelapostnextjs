@@ -148,13 +148,11 @@ export default function ImageCombiner() {
     useEffect(() => { const container = combinedContainerRef.current; if (!container) return; let rafId: number | null = null; const triggerDraw = () => { if (rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(() => { if (isMounted.current && combinedContainerRef.current) { drawPreviewCanvases(); } rafId = null; }); }; const initialDrawTimeout = setTimeout(triggerDraw, 100); const resizeObserver = new ResizeObserver(triggerDraw); resizeObserver.observe(container); return () => { clearTimeout(initialDrawTimeout); resizeObserver.disconnect(); if (rafId) cancelAnimationFrame(rafId); }; }, [drawPreviewCanvases]);
 
     // --- Handlers ---
-    // CORRIGIDO: Usar React.ChangeEvent
     const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, mediaSetter: (v: string | null) => void, typeSetter: (v: MediaType) => void, focusSetter: (v: RelativeFocus) => void, zoomSetter: (v: number) => void) => {
         const file = e.target.files?.[0]; focusSetter({ x: 0.5, y: 0.5 }); zoomSetter(100); typeSetter(null); mediaSetter(null); setSaveError(null);
         if (file) { const reader = new FileReader(); reader.onload = (event) => { const result = event.target?.result; if (typeof result === 'string') { let detectedType: MediaType = null; if (file.type.startsWith('video/')) { detectedType = 'video'; } else if (file.type.startsWith('image/')) { detectedType = 'image'; } else { setSaveError(`Tipo de arquivo não suportado: ${file.type}`); return; } typeSetter(detectedType); mediaSetter(result); } else { setSaveError("Erro interno ao ler arquivo."); } }; reader.onerror = () => { setSaveError("Erro ao ler o arquivo."); }; reader.readAsDataURL(file); }
         e.target.value = '';
     };
-    // CORRIGIDO: Usar React.ChangeEvent
     const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]; setLogo(null); setLogoElement(null); setSaveError(null);
         if (file && file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = (ev) => { const res = ev.target?.result; if (typeof res === 'string') { setLogo(res); } else { setSaveError("Erro interno ao ler logo."); } }; reader.onerror = () => { setSaveError("Erro ao ler logo."); }; reader.readAsDataURL(file); }
@@ -187,62 +185,115 @@ export default function ImageCombiner() {
 
     const handleInteractionEnd = useCallback(() => { if (activeDrag) { setActiveDrag(null); setIsTouching(false); if (animationFrameId.current) { cancelAnimationFrame(animationFrameId.current); animationFrameId.current = null; } } }, [activeDrag]);
 
-    // CORRIGIDO: Usar React.MouseEvent
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, type: Exclude<DragType, null>) => {
         if (e.button !== 0 || isTouching) return; const target = e.target as HTMLElement;
         if (target.getAttribute('data-interactive-area') === String(type) || (type === 'logo' && target.closest('[data-logo-container]'))) { e.preventDefault(); e.stopPropagation(); handleInteractionStart(e.clientX, e.clientY, type); }
     };
 
-    // CORRIGIDO: Usar MouseEvent (global) para listener no document
+    // Handler global de mousemove (precisa aceitar MouseEvent genérico)
     const handleMouseMove = useCallback((e: MouseEvent) => { if (activeDrag && !isTouching) { e.preventDefault(); handleInteractionMove(e.clientX, e.clientY); } }, [activeDrag, isTouching, handleInteractionMove]);
-    // CORRIGIDO: Usar MouseEvent (global) para listener no document
+    // Handler global de mouseup (precisa aceitar MouseEvent genérico)
     const handleMouseUp = useCallback((e: MouseEvent) => { if (e.button === 0 && activeDrag && !isTouching) { handleInteractionEnd(); } }, [activeDrag, isTouching, handleInteractionEnd]);
-    // CORRIGIDO: Usar React.TouchEvent
+
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>, type: Exclude<DragType, null>) => {
         const target = e.target as HTMLElement;
         if (target.getAttribute('data-interactive-area') === String(type) || (type === 'logo' && target.closest('[data-logo-container]'))) { e.stopPropagation(); if (e.touches.length === 1) { setIsTouching(true); const touch = e.touches[0]; handleInteractionStart(touch.clientX, touch.clientY, type); } else { handleInteractionEnd(); } }
     };
-    // CORRIGIDO: Usar TouchEvent (global) para listener no document
+    // Handler global de touchmove (precisa aceitar TouchEvent genérico)
     const handleTouchMove = useCallback((e: TouchEvent) => { if (activeDrag && isTouching && e.touches.length === 1) { e.preventDefault(); handleInteractionMove(e.touches[0].clientX, e.touches[0].clientY); } else if(activeDrag && isTouching) { handleInteractionEnd(); } }, [activeDrag, isTouching, handleInteractionMove, handleInteractionEnd]);
-    // CORRIGIDO: Usar TouchEvent (global) para listener no document
+    // Handler global de touchend/touchcancel (precisa aceitar TouchEvent genérico)
     const handleTouchEnd = useCallback((e: TouchEvent) => { if (isTouching && activeDrag && e.touches.length === 0) { handleInteractionEnd(); } }, [isTouching, activeDrag, handleInteractionEnd]);
 
-    // CORRIGIDO: Usar React.WheelEvent
-    const internalHandleWheelZoom = useCallback((e: React.WheelEvent, zoomSetter: React.Dispatch<React.SetStateAction<number>>, minZoom = 10, maxZoom = 500) => {
+    // Handler interno de wheel (precisa aceitar WheelEvent genérico do DOM, não React.WheelEvent)
+    const internalHandleWheelZoom = useCallback((e: WheelEvent, zoomSetter: React.Dispatch<React.SetStateAction<number>>, minZoom = 10, maxZoom = 500) => {
         e.preventDefault(); e.stopPropagation(); const zoomAmount = e.deltaY * -0.2; zoomSetter(prevZoom => clamp(prevZoom + zoomAmount, minZoom, maxZoom));
         if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current); animationFrameId.current = requestAnimationFrame(drawPreviewCanvases);
     }, [drawPreviewCanvases]);
 
     // --- Efeito para Listeners Globais ---
     useEffect(() => {
-        const touchMoveOptions = { passive: false };
+        // Use AddEventListenerOptions type for clarity if needed, but {} works
+        const touchMoveOptions: AddEventListenerOptions = { passive: false };
+
         const addListeners = () => {
-            if (isTouching) { document.addEventListener('touchmove', handleTouchMove, touchMoveOptions); document.addEventListener('touchend', handleTouchEnd); document.addEventListener('touchcancel', handleTouchEnd); }
-            else { document.addEventListener('mousemove', handleMouseMove); document.addEventListener('mouseup', handleMouseUp); }
-            document.body.style.cursor = 'grabbing'; document.body.style.userSelect = 'none';
+            if (isTouching) {
+                document.addEventListener('touchmove', handleTouchMove, touchMoveOptions);
+                document.addEventListener('touchend', handleTouchEnd);
+                document.addEventListener('touchcancel', handleTouchEnd);
+            } else {
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            }
+            document.body.style.cursor = 'grabbing';
+            document.body.style.userSelect = 'none';
         };
+
         const removeListeners = () => {
-            document.removeEventListener('touchmove', handleTouchMove, touchMoveOptions); document.removeEventListener('touchend', handleTouchEnd); document.removeEventListener('touchcancel', handleTouchEnd);
-            document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp);
-            if (!activeDrag) { document.body.style.cursor = ''; document.body.style.userSelect = ''; }
+            // ***************** CORREÇÃO AQUI *****************
+            // Cast the specific handlers to the generic EventListener type
+            // for removeEventListener to satisfy TypeScript's stricter checking.
+            document.removeEventListener('touchmove', handleTouchMove as EventListener, touchMoveOptions);
+            document.removeEventListener('touchend', handleTouchEnd as EventListener);
+            document.removeEventListener('touchcancel', handleTouchEnd as EventListener);
+            // **************************************************
+
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+
+            // Only reset cursor/select if we are truly done dragging
+            if (!activeDrag) {
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
         };
-        if (activeDrag) { addListeners(); } else { document.body.style.cursor = ''; document.body.style.userSelect = ''; }
-        return () => { removeListeners(); };
+
+        if (activeDrag) {
+            addListeners();
+        } else {
+            // Ensure styles are reset if dragging stops for any reason
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+
+        // Cleanup function
+        return () => {
+            removeListeners();
+            // Ensure styles are reset on unmount or dependency change if needed
+             document.body.style.cursor = '';
+             document.body.style.userSelect = '';
+        };
+        // Dependencies ensure listeners are added/removed correctly when drag state changes
     }, [activeDrag, isTouching, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
     // --- EFEITO PARA ADICIONAR LISTENER DE WHEEL ---
     useEffect(() => {
-        const leftDiv = leftInteractiveRef.current; const rightDiv = rightInteractiveRef.current; const wheelOptions = { passive: false };
-        // Handler inline para a esquerda
-        const wheelHandlerLeft = (e: Event) => { if (leftMediaElement && e instanceof WheelEvent) { internalHandleWheelZoom(e as unknown as React.WheelEvent, setLeftZoom); } }; // Cast para React.WheelEvent
-        // Handler inline para a direita
-        const wheelHandlerRight = (e: Event) => { if (rightMediaElement && e instanceof WheelEvent) { internalHandleWheelZoom(e as unknown as React.WheelEvent, setRightZoom); } }; // Cast para React.WheelEvent
+        const leftDiv = leftInteractiveRef.current;
+        const rightDiv = rightInteractiveRef.current;
+        const wheelOptions: AddEventListenerOptions = { passive: false };
+
+        // Handler inline para a esquerda (accepts generic Event)
+        const wheelHandlerLeft = (e: Event) => {
+            // Check if it's a WheelEvent and call the zoom handler
+            if (leftMediaElement && e instanceof WheelEvent) {
+                internalHandleWheelZoom(e, setLeftZoom); // Pass the WheelEvent
+            }
+        };
+        // Handler inline para a direita (accepts generic Event)
+        const wheelHandlerRight = (e: Event) => {
+             // Check if it's a WheelEvent and call the zoom handler
+            if (rightMediaElement && e instanceof WheelEvent) {
+                internalHandleWheelZoom(e, setRightZoom); // Pass the WheelEvent
+            }
+        };
+
         if (leftDiv) { leftDiv.addEventListener('wheel', wheelHandlerLeft, wheelOptions); }
         if (rightDiv) { rightDiv.addEventListener('wheel', wheelHandlerRight, wheelOptions); }
+
         return () => {
             if (leftDiv) { leftDiv.removeEventListener('wheel', wheelHandlerLeft, wheelOptions); }
             if (rightDiv) { rightDiv.removeEventListener('wheel', wheelHandlerRight, wheelOptions); }
         };
+        // Add internalHandleWheelZoom as dependency since it's used in the effect
     }, [internalHandleWheelZoom, leftMediaElement, rightMediaElement, setLeftZoom, setRightZoom]);
 
 
