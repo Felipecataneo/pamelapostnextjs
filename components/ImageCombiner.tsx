@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Save, ZoomIn, Move, Video, Image as ImageIcon, AlertTriangle, Download } from 'lucide-react';
+// Ícone 'Save' removido pois não era usado
+import { ZoomIn, Move, Video, Image as ImageIcon, AlertTriangle, Download } from 'lucide-react';
 // Substitua pelos seus caminhos corretos se necessário
 import { GeminiImageEditor } from './gemini-image-editor'; // Assumindo que este componente existe
 import { MediaInput } from './media-input'; // Assumindo que este componente existe
@@ -101,8 +102,9 @@ const drawMediaSection = (
         const sHeightFinal = dHeight / finalScale; // Altura da fonte necessária para preencher dHeight com finalScale
 
         // Calcula o ponto superior esquerdo (sx, sy) da fonte com base no foco relativo
-        let sxIdeal = sourceWidth * relativeFocus.x - sWidthFinal / 2;
-        let syIdeal = sourceHeight * relativeFocus.y - sHeightFinal / 2;
+        // CORRIGIDO: Usar const pois não são reatribuídas
+        const sxIdeal = sourceWidth * relativeFocus.x - sWidthFinal / 2;
+        const syIdeal = sourceHeight * relativeFocus.y - sHeightFinal / 2;
 
         // Garante que sx e sy não saiam dos limites da imagem original
         const sx = clamp(sxIdeal, 0, Math.max(0, sourceWidth - sWidthFinal));
@@ -116,11 +118,11 @@ const drawMediaSection = (
         const dW = dWidth; // Largura no canvas de destino
         const dH = dHeight; // Altura no canvas de destino
 
-        console.log(logPrefix + `[${section}] DRAWING PARAMS: \n  Source: sx=${sx.toFixed(1)}, sy=${sy.toFixed(1)}, sW=${sWidth.toFixed(1)}, sH=${sHeight.toFixed(1)} (from ${sourceWidth}x${sourceHeight})\n  Dest:   dX=${dX.toFixed(1)}, dY=${dY.toFixed(1)}, dW=${dW.toFixed(1)}, dH=${dH.toFixed(1)}`);
+        // console.log(logPrefix + `[${section}] DRAWING PARAMS: \n  Source: sx=${sx.toFixed(1)}, sy=${sy.toFixed(1)}, sW=${sWidth.toFixed(1)}, sH=${sHeight.toFixed(1)} (from ${sourceWidth}x${sourceHeight})\n  Dest:   dX=${dX.toFixed(1)}, dY=${dY.toFixed(1)}, dW=${dW.toFixed(1)}, dH=${dH.toFixed(1)}`);
 
         if (sWidth > 0 && sHeight > 0 && dW > 0 && dH > 0 && Number.isFinite(sx) && Number.isFinite(sy)) {
             ctx.drawImage(mediaElement, sx, sy, sWidth, sHeight, dX, dY, dW, dH);
-            console.log(logPrefix + `[${section}] drawImage successful.`);
+            // console.log(logPrefix + `[${section}] drawImage successful.`);
         } else {
             console.warn(logPrefix + `[${section}] Skipping drawImage due to zero/invalid params. sW=${sWidth}, sH=${sH}, dW=${dW}, dH=${dH}, sx=${sx}, sy=${sy}`);
         }
@@ -202,12 +204,12 @@ export default function ImageCombiner() {
         if (leftCanvas.width !== previewHalfWidth || leftCanvas.height !== previewHeight) {
             leftCanvas.width = previewHalfWidth;
             leftCanvas.height = previewHeight;
-             console.log(logPrefix + `[left] Resized canvas to ${previewHalfWidth}x${previewHeight}`);
+            // console.log(logPrefix + `[left] Resized canvas to ${previewHalfWidth}x${previewHeight}`);
         }
         if (rightCanvas.width !== previewHalfWidth || rightCanvas.height !== previewHeight) {
             rightCanvas.width = previewHalfWidth;
             rightCanvas.height = previewHeight;
-            console.log(logPrefix + `[right] Resized canvas to ${previewHalfWidth}x${previewHeight}`);
+            // console.log(logPrefix + `[right] Resized canvas to ${previewHalfWidth}x${previewHeight}`);
         }
 
         const leftCtx = leftCanvas.getContext('2d');
@@ -225,37 +227,28 @@ export default function ImageCombiner() {
         if (rightCtx) {
             // Passa a LARGURA TOTAL do container para drawMediaSection saber o tamanho da "metade"
             drawMediaSection(rightCtx, rightMediaElement, 'right', containerWidth, previewHeight, rightZoom, rightRelativeFocus);
-
-            // -------> REMOVIDO O CÓDIGO DE TESTE QUE IMPEDIA O DESENHO <-------
-            // console.log(logPrefix + "[right] Attempting TEST FILL RECT");
-            // const dx_test = 0; // Coords locais do canvas direito
-            // const dy_test = 0;
-            // const dWidth_test = previewHalfWidth;
-            // const dHeight_test = previewHeight;
-            // rightCtx.clearRect(dx_test, dy_test, dWidth_test, dHeight_test); // Limpa canvas direito
-            // rightCtx.fillStyle = 'lime';
-            // rightCtx.fillRect(dx_test + 5, dy_test + 5, dWidth_test - 10, dHeight_test - 10); // Desenha teste
-            // console.log(logPrefix + `[right] TEST Fill Rect executed at ${dx_test},${dy_test} ${dWidth_test}x${dHeight_test}`);
-            // // drawMediaSection(...) // Esta linha estava comentada!
         } else {
             console.error(logPrefix + "Failed to get right preview context.");
         }
 
-    }, [leftMediaElement, rightMediaElement, leftZoom, rightZoom, leftRelativeFocus, rightRelativeFocus /* Adicionar outras dependências se necessário, como tamanho do container se ele mudar dinamicamente e afetar o desenho*/]);
+    }, [leftMediaElement, rightMediaElement, leftZoom, rightZoom, leftRelativeFocus, rightRelativeFocus]);
 
     // --- Efeitos de Carregamento de Mídia ---
+    // CORRIGIDO: Desabilitada regra exhaustive-deps pois as dependências sugeridas causam loops/problemas aqui.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (leftMedia && leftMediaType) { setIsLoadingLeft(true); setLeftMediaElement(null); let cancelled = false; console.log(logPrefix + `[left] EFFECT START - Loading media. Type: ${leftMediaType}`); loadMediaElement(leftMedia, leftMediaType, 'left').then(el => { if (isMounted.current && !cancelled) setLeftMediaElement(el); else if (el.src.startsWith('blob:')) URL.revokeObjectURL(el.src); }).catch(err => { if (isMounted.current && !cancelled) { const msg = err instanceof Error ? err.message : String(err); setSaveError(`Erro Esq: ${msg}`); } }).finally(() => { if (isMounted.current && !cancelled) setIsLoadingLeft(false); }); return () => { cancelled = true; setLeftMediaElement(el => { if (el && el.src.startsWith('blob:')) URL.revokeObjectURL(el.src); return null; }); }; } else { if (leftMediaElement || isLoadingLeft) { setLeftMediaElement(null); setIsLoadingLeft(false); } } }, [leftMedia, leftMediaType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (rightMedia && rightMediaType) { setIsLoadingRight(true); setRightMediaElement(null); let cancelled = false; console.log(logPrefix + `[right] EFFECT START - Loading media. Type: ${rightMediaType}`); loadMediaElement(rightMedia, rightMediaType, 'right').then(el => { if (isMounted.current && !cancelled) setRightMediaElement(el); else if (el.src.startsWith('blob:')) URL.revokeObjectURL(el.src); }).catch(err => { if (isMounted.current && !cancelled) { const msg = err instanceof Error ? err.message : String(err); setSaveError(`Erro Dir: ${msg}`); } }).finally(() => { if (isMounted.current && !cancelled) setIsLoadingRight(false); }); return () => { cancelled = true; setRightMediaElement(el => { if (el && el.src.startsWith('blob:')) URL.revokeObjectURL(el.src); return null; }); }; } else { if (rightMediaElement || isLoadingRight) { setRightMediaElement(null); setIsLoadingRight(false); } } }, [rightMedia, rightMediaType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { if (logo) { setIsLoadingLogo(true); setLogoElement(null); let cancelled = false; console.log(logPrefix + `[logo] EFFECT START - Loading logo.`); loadMediaElement(logo, 'image', 'logo').then(el => { if (isMounted.current && !cancelled) setLogoElement(el as HTMLImageElement); else if (el.src.startsWith('blob:')) URL.revokeObjectURL(el.src); }).catch(err => { if (isMounted.current && !cancelled) { const msg = err instanceof Error ? err.message : String(err); setSaveError(`Erro Logo: ${msg}`); } }).finally(() => { if (isMounted.current && !cancelled) setIsLoadingLogo(false); }); return () => { cancelled = true; setLogoElement(el => { if (el && el.src.startsWith('blob:')) URL.revokeObjectURL(el.src); return null; }); }; } else { if (logoElement || isLoadingLogo) { setLogoElement(null); setIsLoadingLogo(false); } } }, [logo]);
+
 
     // --- Efeito para Acionar Desenhos quando elementos ou parâmetros mudam ---
     useEffect(() => {
-        // Redesenha sempre que um elemento de mídia for carregado/removido
-        // ou quando zoom/foco mudar (implícito pela dependência de drawPreviewCanvases)
         if (combinedContainerRef.current && combinedContainerRef.current.offsetParent !== null) {
             const rafId = requestAnimationFrame(() => {
                 if (isMounted.current && combinedContainerRef.current) {
-                    console.log(logPrefix + "Redrawing due to media/param change...");
+                    // console.log(logPrefix + "Redrawing due to media/param change...");
                     drawPreviewCanvases();
                 }
             });
@@ -275,7 +268,7 @@ export default function ImageCombiner() {
             if (rafId) cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(() => {
                 if (isMounted.current && combinedContainerRef.current) {
-                    console.log(logPrefix + "Redrawing due to resize...");
+                    // console.log(logPrefix + "Redrawing due to resize...");
                     drawPreviewCanvases();
                 }
                 rafId = null;
@@ -292,7 +285,7 @@ export default function ImageCombiner() {
             clearTimeout(initialDrawTimeout);
             resizeObserver.disconnect();
             if (rafId) cancelAnimationFrame(rafId);
-            console.log(logPrefix + "Resize observer disconnected.");
+            // console.log(logPrefix + "Resize observer disconnected.");
         };
     }, [drawPreviewCanvases]); // Depende do callback de desenho atualizado
 
@@ -410,7 +403,8 @@ export default function ImageCombiner() {
             // Recalculate scale based on *destination* area (half width)
             const destAspect = previewHalfWidth / containerHeight;
             const sourceAspect = sourceWidth / sourceHeight;
-            let scaleToCover = (sourceAspect > destAspect) ? (containerHeight / sourceHeight) : (previewHalfWidth / sourceWidth);
+            // CORRIGIDO: usar const
+            const scaleToCover = (sourceAspect > destAspect) ? (containerHeight / sourceHeight) : (previewHalfWidth / sourceWidth);
             const finalScale = scaleToCover * currentZoom;
             if (finalScale <= 0) return false; // Avoid division by zero
 
@@ -460,10 +454,8 @@ export default function ImageCombiner() {
                 cancelAnimationFrame(animationFrameId.current);
                 animationFrameId.current = null;
             }
-             // Optional: Trigger one final draw for highest quality after interaction
-            // requestAnimationFrame(drawPreviewCanvases);
         }
-    }, [activeDrag /*, drawPreviewCanvases */]); // drawPreviewCanvases removed if final draw isn't needed
+    }, [activeDrag]);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, type: Exclude<DragType, null>) => {
         if (e.button !== 0 || isTouching) return; // Only left clicks, ignore if touch is active
@@ -599,21 +591,21 @@ export default function ImageCombiner() {
 
         if (leftDiv) {
             leftDiv.addEventListener('wheel', handleLeftWheel, wheelOptions);
-            console.log(logPrefix + "Added wheel listener to left div");
+            // console.log(logPrefix + "Added wheel listener to left div");
         }
         if (rightDiv) {
             rightDiv.addEventListener('wheel', handleRightWheel, wheelOptions);
-            console.log(logPrefix + "Added wheel listener to right div");
+            // console.log(logPrefix + "Added wheel listener to right div");
         }
 
         return () => {
             if (leftDiv) {
                 leftDiv.removeEventListener('wheel', handleLeftWheel, wheelOptions);
-                console.log(logPrefix + "Removed wheel listener from left div");
+                // console.log(logPrefix + "Removed wheel listener from left div");
             }
             if (rightDiv) {
                 rightDiv.removeEventListener('wheel', handleRightWheel, wheelOptions);
-                console.log(logPrefix + "Removed wheel listener from right div");
+                // console.log(logPrefix + "Removed wheel listener from right div");
             }
         };
         // Re-attach if elements or zoom handlers change (internalHandleWheelZoom changes if drawPreviewCanvases changes)
@@ -629,11 +621,8 @@ export default function ImageCombiner() {
         console.log(logPrefix + "Save button clicked. canSave:", canSave);
         if (!canSave) {
             console.warn(logPrefix + "Save attempt failed: Conditions not met.", {
-                canSave,
-                leftMediaType,
-                rightMediaType,
-                leftEl: !!leftMediaElement,
-                rightEl: !!rightMediaElement,
+                canSave, leftMediaType, rightMediaType,
+                leftEl: !!leftMediaElement, rightEl: !!rightMediaElement,
                 leftW: leftMediaElement && 'naturalWidth' in leftMediaElement ? leftMediaElement.naturalWidth : undefined,
                 leftH: leftMediaElement && 'naturalHeight' in leftMediaElement ? leftMediaElement.naturalHeight : undefined,
                 rightW: rightMediaElement && 'naturalWidth' in rightMediaElement ? rightMediaElement.naturalWidth : undefined,
@@ -652,28 +641,13 @@ export default function ImageCombiner() {
         console.log(logPrefix + "--- Starting Save ---");
 
         try {
-            // --- Define Final Output Dimensions ---
-            // Option 1: Fixed Width (like your original)
-            // const finalWidth = 1920;
-            // const finalHalfWidth = finalWidth / 2;
-            // // Calculate heights based on maintaining aspect ratio for each half
-            // const leftTargetHeight = finalHalfWidth * (safeLeftElement.naturalHeight / safeLeftElement.naturalWidth);
-            // const rightTargetHeight = finalHalfWidth * (safeRightElement.naturalHeight / safeRightElement.naturalWidth);
-            // // Use the maximum height to ensure both images fit fully
-            // const finalHeight = Math.ceil(Math.max(leftTargetHeight, rightTargetHeight));
-
-            // Option 2: Use native resolution of one image (e.g., left) as basis?
-            // const finalWidth = safeLeftElement.naturalWidth * 2; // Double width for side-by-side
-            // const finalHeight = safeLeftElement.naturalHeight; // Keep original height
-
-            // Option 3: Use the HIGHEST resolution available as basis (might create large files)
+             // Use a resolução mais alta como base para a largura de cada metade
              const targetWidthPerImage = Math.max(safeLeftElement.naturalWidth, safeRightElement.naturalWidth);
              const finalWidth = targetWidthPerImage * 2;
-             // Calculate height based on the tallest image at the target width per side
+             // Calcule a altura com base na imagem mais alta na largura alvo por lado
              const leftHeightAtTarget = targetWidthPerImage * (safeLeftElement.naturalHeight / safeLeftElement.naturalWidth);
              const rightHeightAtTarget = targetWidthPerImage * (safeRightElement.naturalHeight / safeRightElement.naturalWidth);
              const finalHeight = Math.ceil(Math.max(leftHeightAtTarget, rightHeightAtTarget));
-
 
             if (!Number.isFinite(finalWidth) || finalWidth <= 0 || !Number.isFinite(finalHeight) || finalHeight <= 0) {
                  throw new Error(`Dimensões finais calculadas inválidas: ${finalWidth}x${finalHeight}. Verifique as dimensões das imagens originais.`);
@@ -687,16 +661,9 @@ export default function ImageCombiner() {
 
             if (!ctx) throw new Error("Não foi possível obter o contexto 2D final.");
 
-            // Optional: Fill background if images might not cover fully
-            ctx.fillStyle = '#ffffff'; // or another background color
+            // Opcional: Preencher fundo se as imagens não cobrirem totalmente
+            ctx.fillStyle = '#ffffff'; // ou outra cor de fundo
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            console.log(logPrefix + "Drawing Left (Final)...");
-            // Use a separate drawing function for final output OR reuse drawMediaSection carefully
-            // Reusing drawMediaSection: We need to pass the *final* dimensions
-            // Note: The 'dx' inside drawMediaSection is 0 for both left and right contexts,
-            // but here we draw onto a single context, so we *do* need an offset for the right side.
-            // LET'S CREATE A SPECIFIC FINAL DRAW FUNCTION TO AVOID CONFUSION.
 
             const drawFinalMedia = (
                 finalCtx: CanvasRenderingContext2D,
@@ -708,42 +675,44 @@ export default function ImageCombiner() {
                 focus: RelativeFocus
             ) => {
                 finalCtx.save();
-                const sectionWidth = outputWidth / 2; // Width of this section in the final canvas
-                const sectionHeight = outputHeight; // Height of this section
-                const sectionDx = section === 'left' ? 0 : sectionWidth; // X offset in the final canvas
-                const sectionDy = 0; // Y offset
+                const sectionWidth = outputWidth / 2; // Largura desta seção no canvas final
+                const sectionHeight = outputHeight; // Altura desta seção
+                const sectionDx = section === 'left' ? 0 : sectionWidth; // Offset X no canvas final
+                const sectionDy = 0; // Offset Y
 
-                // Clip drawing to the specific section to prevent overflow
+                // Recortar desenho para a seção específica
                 finalCtx.beginPath();
                 finalCtx.rect(sectionDx, sectionDy, sectionWidth, sectionHeight);
                 finalCtx.clip();
 
-                // Reuse the core logic from drawMediaSection, adapting destination parameters
+                // Reutilizar lógica central de drawMediaSection, adaptando parâmetros de destino
                 const sourceWidth = mediaEl.naturalWidth;
                 const sourceHeight = mediaEl.naturalHeight;
                 const overallScale = zoom / 100;
                 const sourceAspect = sourceWidth / sourceHeight;
-                const destAspect = sectionWidth / sectionHeight; // Use section aspect ratio
+                const destAspect = sectionWidth / sectionHeight; // Usar aspect ratio da seção
 
                 let coverScale: number;
                 if (sourceAspect > destAspect) { coverScale = sectionHeight / sourceHeight; } else { coverScale = sectionWidth / sourceWidth; }
                 const finalScale = coverScale * overallScale;
                 const sWidthFinal = sectionWidth / finalScale;
                 const sHeightFinal = sectionHeight / finalScale;
-                let sxIdeal = sourceWidth * focus.x - sWidthFinal / 2;
-                let syIdeal = sourceHeight * focus.y - sHeightFinal / 2;
+                 // CORRIGIDO: Usar const
+                const sxIdeal = sourceWidth * focus.x - sWidthFinal / 2;
+                const syIdeal = sourceHeight * focus.y - sHeightFinal / 2;
                 const sx = clamp(sxIdeal, 0, Math.max(0, sourceWidth - sWidthFinal));
                 const sy = clamp(syIdeal, 0, Math.max(0, sourceHeight - sHeightFinal));
                 const sWidth = sWidthFinal;
                 const sHeight = sHeightFinal;
 
-                // Draw into the correct section of the final canvas
+                // Desenhar na seção correta do canvas final
                 finalCtx.drawImage(mediaEl, sx, sy, sWidth, sHeight, sectionDx, sectionDy, sectionWidth, sectionHeight);
-                console.log(logPrefix + `[${section}] Final Draw Params: sx=${sx.toFixed(1)}, sy=${sy.toFixed(1)}, sW=${sWidth.toFixed(1)}, sH=${sHeight.toFixed(1)} -> dX=${sectionDx}, dY=${sectionDy}, dW=${sectionWidth}, dH=${sectionHeight}`);
+                // console.log(logPrefix + `[${section}] Final Draw Params: sx=${sx.toFixed(1)}, sy=${sy.toFixed(1)}, sW=${sWidth.toFixed(1)}, sH=${sHeight.toFixed(1)} -> dX=${sectionDx}, dY=${sectionDy}, dW=${sectionWidth}, dH=${sectionHeight}`);
 
-                finalCtx.restore(); // Remove clipping path
+                finalCtx.restore(); // Remover caminho de recorte
             };
 
+            console.log(logPrefix + "Drawing Left (Final)...");
             drawFinalMedia(ctx, safeLeftElement, 'left', finalWidth, finalHeight, leftZoom, leftRelativeFocus);
 
             console.log(logPrefix + "Drawing Right (Final)...");
@@ -753,22 +722,14 @@ export default function ImageCombiner() {
             if (logoElement && logoElement.naturalWidth > 0 && logoElement.naturalHeight > 0) {
                 console.log(logPrefix + "Drawing Logo (Final)...");
                 const logoAspectRatio = logoElement.naturalHeight / logoElement.naturalWidth;
-                // Calculate logo size relative to the *final* image width
-                const targetLogoWidth = (finalWidth * logoZoom) / 100; // logoZoom is % of total width
+                const targetLogoWidth = (finalWidth * logoZoom) / 100;
                 const targetLogoHeight = targetLogoWidth * (isNaN(logoAspectRatio) ? 1 : logoAspectRatio);
-
-                // Calculate logo center position based on final dimensions and relative position
                 const logoCenterX = (finalWidth * logoPosition.x) / 100;
                 const logoCenterY = (finalHeight * logoPosition.y) / 100;
-
-                // Calculate top-left corner for drawing
                 let logoDrawX = logoCenterX - targetLogoWidth / 2;
                 let logoDrawY = logoCenterY - targetLogoHeight / 2;
-
-                 // Clamp logo position to stay within canvas bounds (optional but good practice)
-                 logoDrawX = clamp(logoDrawX, 0, finalWidth - targetLogoWidth);
-                 logoDrawY = clamp(logoDrawY, 0, finalHeight - targetLogoHeight);
-
+                logoDrawX = clamp(logoDrawX, 0, finalWidth - targetLogoWidth);
+                logoDrawY = clamp(logoDrawY, 0, finalHeight - targetLogoHeight);
                 ctx.drawImage(logoElement, logoDrawX, logoDrawY, targetLogoWidth, targetLogoHeight);
                 console.log(logPrefix + `Logo drawn at ${logoDrawX.toFixed(1)},${logoDrawY.toFixed(1)} size ${targetLogoWidth.toFixed(1)}x${targetLogoHeight.toFixed(1)}.`);
             } else {
@@ -783,86 +744,46 @@ export default function ImageCombiner() {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = 'imagem-combinada.png'; // Set filename
-                        document.body.appendChild(a); // Required for Firefox
+                        a.download = 'imagem-combinada.png';
+                        document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
-                        URL.revokeObjectURL(url); // Clean up blob URL
+                        URL.revokeObjectURL(url);
                         console.log(logPrefix + "Download triggered and cleanup done.");
                         setIsSaving(false);
                     } else {
-                        if (!isMounted.current) {
-                            console.log(logPrefix + "Blob generation/download cancelled, component unmounted.");
-                            // No need to set state if unmounted
-                        } else {
-                            console.error(logPrefix + "Failed to generate blob (blob is null).");
-                            setSaveError("Falha ao gerar o blob da imagem final.");
-                            setIsSaving(false);
-                        }
+                        if (!isMounted.current) { console.log(logPrefix + "Blob generation/download cancelled, component unmounted."); }
+                        else { console.error(logPrefix + "Failed to generate blob (blob is null)."); setSaveError("Falha ao gerar o blob da imagem final."); setIsSaving(false); }
                     }
-                },
-                'image/png', // Specify PNG format
-                0.95 // Quality setting (0 to 1) for PNG (often ignored) or JPEG
+                }, 'image/png', 0.95
             );
 
         } catch (error) {
             console.error(logPrefix + 'Error during save:', error);
-            if (isMounted.current) {
-                const msg = error instanceof Error ? error.message : String(error);
-                setSaveError(`Falha ao salvar: ${msg}`);
-                setIsSaving(false);
-            }
+            if (isMounted.current) { const msg = error instanceof Error ? error.message : String(error); setSaveError(`Falha ao salvar: ${msg}`); setIsSaving(false); }
         }
     };
 
     // --- Calcula Estilos do Logo (para preview) ---
     const getLogoStyle = (): React.CSSProperties => {
         const container = combinedContainerRef.current;
-        // Ensure logo is loaded and container exists
-        if (!container || !logoElement || !logo || logoElement.naturalWidth <= 0 || logoElement.naturalHeight <= 0) {
-            return { display: 'none' }; // Hide if no logo or container
-        }
-
+        if (!container || !logoElement || !logo || logoElement.naturalWidth <= 0 || logoElement.naturalHeight <= 0) { return { display: 'none' }; }
         const previewContainerWidth = container.offsetWidth;
         const previewContainerHeight = container.offsetHeight;
-        if (previewContainerWidth <= 0 || previewContainerHeight <= 0) {
-            return { display: 'none' }; // Hide if container has no size
-        }
-
-        // Calculate logo size based on preview container width and logoZoom percentage
+        if (previewContainerWidth <= 0 || previewContainerHeight <= 0) { return { display: 'none' }; }
         const previewLogoWidthPx = (previewContainerWidth * logoZoom) / 100;
         const aspectRatio = logoElement.naturalHeight / logoElement.naturalWidth;
-        const previewLogoHeightPx = previewLogoWidthPx * (isNaN(aspectRatio) ? 1 : aspectRatio); // Use aspect ratio
-
-        // Calculate center position based on preview container size and logoPosition percentage
+        const previewLogoHeightPx = previewLogoWidthPx * (isNaN(aspectRatio) ? 1 : aspectRatio);
         const centerX = (previewContainerWidth * logoPosition.x) / 100;
         const centerY = (previewContainerHeight * logoPosition.y) / 100;
-
-        // Calculate top-left position for absolute positioning
         const topLeftX = centerX - previewLogoWidthPx / 2;
         const topLeftY = centerY - previewLogoHeightPx / 2;
-
         return {
-            position: 'absolute',
-            left: `${topLeftX}px`,
-            top: `${topLeftY}px`,
-            width: `${previewLogoWidthPx}px`,
-            height: `${previewLogoHeightPx}px`, // Set height based on aspect ratio
-            cursor: activeDrag === 'logo' ? 'grabbing' : 'grab',
-            zIndex: 10, // Ensure logo is above canvases
-            userSelect: 'none', // Prevent text selection
-            WebkitUserSelect: 'none',
-            MozUserSelect: 'none',
-            touchAction: 'none', // Prevent default touch actions like scrolling
-            // Use background image for better scaling/containment control
-            backgroundImage: `url(${logo})`,
-            backgroundSize: 'contain', // Scale logo to fit within the dimensions
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
-            // Add border for visual feedback during interaction
-            border: `1px dashed ${activeDrag === 'logo' ? 'rgba(0, 100, 255, 0.8)' : 'transparent'}`,
-            opacity: activeDrag === 'logo' ? 0.8 : 1.0,
-            transition: 'border-color 0.2s ease, opacity 0.2s ease', // Smooth transitions
+            position: 'absolute', left: `${topLeftX}px`, top: `${topLeftY}px`, width: `${previewLogoWidthPx}px`, height: `${previewLogoHeightPx}px`,
+            cursor: activeDrag === 'logo' ? 'grabbing' : 'grab', zIndex: 10, userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', touchAction: 'none',
+            backgroundImage: `url(${logo})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center',
+            border: `1px dashed ${activeDrag === 'logo' ? 'rgba(0, 100, 255, 0.8)' : 'transparent'}`, opacity: activeDrag === 'logo' ? 0.8 : 1.0,
+            transition: 'border-color 0.2s ease, opacity 0.2s ease',
         };
     };
 
@@ -884,24 +805,19 @@ export default function ImageCombiner() {
                      </CardHeader>
                      <CardContent className='p-0'>
                          <MediaInput
-                             id="left-media-upload"
-                             label="Carregar Esquerda"
-                             accept="image/*,video/*"
+                             id="left-media-upload" label="Carregar Esquerda" accept="image/*,video/*"
                              onMediaUpload={(e) => handleMediaUpload(e, setLeftMedia, setLeftMediaType, setLeftRelativeFocus, setLeftZoom)}
                              className="mb-2"
                          />
-                         {/* Preview no Card */}
                          {leftMedia && (
                              <div className="aspect-video bg-muted rounded-md overflow-hidden mt-2 relative flex items-center justify-center text-sm text-muted-foreground">
-                                 {isLoadingLeft
-                                     ? "Carregando..."
-                                     : leftMediaElement && leftMediaType === 'video'
-                                         ? <video src={leftMedia} className="w-full h-full object-contain" muted loop playsInline autoPlay key={`preview-left-${leftMedia.substring(0,10)}`} aria-label="Preview vídeo esquerdo"/>
-                                         : leftMediaElement && leftMediaType === 'image'
-                                             ? <img src={leftMedia} alt="Preview esquerda" className="w-full h-full object-contain" />
-                                             : !isLoadingLeft && !leftMediaElement // Se não está carregando E não tem elemento -> falha
-                                                 ? <div className="text-destructive p-2">Falha no carregamento</div>
-                                                 : "Selecione um arquivo" // Estado inicial ou tipo inválido
+                                 {isLoadingLeft ? "Carregando..."
+                                     : leftMediaElement && leftMediaType === 'video' ? <video src={leftMedia} className="w-full h-full object-contain" muted loop playsInline autoPlay key={`preview-left-${leftMedia.substring(0,10)}`} aria-label="Preview vídeo esquerdo"/>
+                                     : leftMediaElement && leftMediaType === 'image' ?
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={leftMedia} alt="Preview esquerda" className="w-full h-full object-contain" />
+                                     : !isLoadingLeft && !leftMediaElement ? <div className="text-destructive p-2">Falha no carregamento</div>
+                                     : "Selecione um arquivo"
                                  }
                              </div>
                          )}
@@ -918,24 +834,19 @@ export default function ImageCombiner() {
                      </CardHeader>
                      <CardContent className='p-0'>
                          <MediaInput
-                             id="right-media-upload"
-                             label="Carregar Direita"
-                             accept="image/*,video/*"
+                             id="right-media-upload" label="Carregar Direita" accept="image/*,video/*"
                              onMediaUpload={(e) => handleMediaUpload(e, setRightMedia, setRightMediaType, setRightRelativeFocus, setRightZoom)}
                              className="mb-2"
                          />
-                         {/* Preview no Card */}
                           {rightMedia && (
                              <div className="aspect-video bg-muted rounded-md overflow-hidden mt-2 relative flex items-center justify-center text-sm text-muted-foreground">
-                                 {isLoadingRight
-                                     ? "Carregando..."
-                                     : rightMediaElement && rightMediaType === 'video'
-                                         ? <video src={rightMedia} className="w-full h-full object-contain" muted loop playsInline autoPlay key={`preview-right-${rightMedia.substring(0,10)}`} aria-label="Preview vídeo direito"/>
-                                         : rightMediaElement && rightMediaType === 'image'
-                                             ? <img src={rightMedia} alt="Preview direita" className="w-full h-full object-contain" />
-                                             : !isLoadingRight && !rightMediaElement // Se não está carregando E não tem elemento -> falha
-                                                 ? <div className="text-destructive p-2">Falha no carregamento</div>
-                                                 : "Selecione um arquivo" // Estado inicial ou tipo inválido
+                                 {isLoadingRight ? "Carregando..."
+                                     : rightMediaElement && rightMediaType === 'video' ? <video src={rightMedia} className="w-full h-full object-contain" muted loop playsInline autoPlay key={`preview-right-${rightMedia.substring(0,10)}`} aria-label="Preview vídeo direito"/>
+                                     : rightMediaElement && rightMediaType === 'image' ?
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={rightMedia} alt="Preview direita" className="w-full h-full object-contain" />
+                                     : !isLoadingRight && !rightMediaElement ? <div className="text-destructive p-2">Falha no carregamento</div>
+                                     : "Selecione um arquivo"
                                  }
                              </div>
                          )}
@@ -952,24 +863,20 @@ export default function ImageCombiner() {
                      </CardHeader>
                      <CardContent className='p-0'>
                          <MediaInput
-                            id="logo-upload"
-                            label="Carregar Logo (Opcional)"
-                            accept="image/png,image/jpeg,image/webp,image/svg+xml" // Aceita formatos comuns de imagem
-                            onMediaUpload={handleLogoUpload}
-                            className="mb-2"
+                            id="logo-upload" label="Carregar Logo (Opcional)" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            onMediaUpload={handleLogoUpload} className="mb-2"
                          />
                          {/* Elemento img oculto para carregar o logo e obter dimensões */}
+                         {/* eslint-disable-next-line @next/next/no-img-element */}
                          <img ref={logoRef} src={logo ?? undefined} alt="" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
-                         {/* Preview no Card */}
                          {logo && (
                              <div className="aspect-video bg-muted rounded-md overflow-hidden mt-2 relative flex items-center justify-center text-sm text-muted-foreground">
-                                 {isLoadingLogo
-                                    ? "Carregando..."
-                                    : logoElement
-                                        ? <img src={logo} alt="Preview logo" className="w-full h-full object-contain" />
-                                        : !isLoadingLogo && !logoElement // Falha
-                                            ? <div className="text-destructive p-2">Falha ao carregar logo</div>
-                                            : "Selecione um arquivo"
+                                 {isLoadingLogo ? "Carregando..."
+                                    : logoElement ?
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={logo} alt="Preview logo" className="w-full h-full object-contain" />
+                                    : !isLoadingLogo && !logoElement ? <div className="text-destructive p-2">Falha ao carregar logo</div>
+                                    : "Selecione um arquivo"
                                  }
                              </div>
                          )}
@@ -982,79 +889,43 @@ export default function ImageCombiner() {
                 {/* Área de Preview Combinado */}
                 <div className="lg:col-span-2">
                     <Card
-                        className="p-0 bg-slate-700 dark:bg-slate-900 relative overflow-hidden aspect-video touch-none select-none" // touch-none é crucial para prevenir scroll no mobile
+                        className="p-0 bg-slate-700 dark:bg-slate-900 relative overflow-hidden aspect-video touch-none select-none"
                         ref={combinedContainerRef}
                         style={{ cursor: activeDrag ? 'grabbing' : 'default' }}
                     >
                         <div className="flex h-full w-full relative">
                             {/* Wrapper Esquerdo Interativo */}
                             <div
-                                ref={leftInteractiveRef} // Ref para listener de wheel
-                                data-interactive-area="left" // Atributo para identificar a área no start
-                                className={cn(
-                                    "w-1/2 h-full relative border-r border-gray-500 dark:border-gray-600 bg-muted/50 flex items-center justify-center",
-                                    leftMediaElement ? (activeDrag === 'left' ? 'cursor-grabbing' : 'cursor-grab') : "cursor-default" // Cursor dinâmico
-                                )}
-                                onMouseDown={(e) => handleMouseDown(e, 'left')}
-                                onTouchStart={(e) => handleTouchStart(e, 'left')}
-                                style={{ touchAction: 'none' }} // Garante que o touch start seja capturado
+                                ref={leftInteractiveRef} data-interactive-area="left"
+                                className={cn("w-1/2 h-full relative border-r border-gray-500 dark:border-gray-600 bg-muted/50 flex items-center justify-center", leftMediaElement ? (activeDrag === 'left' ? 'cursor-grabbing' : 'cursor-grab') : "cursor-default")}
+                                onMouseDown={(e) => handleMouseDown(e, 'left')} onTouchStart={(e) => handleTouchStart(e, 'left')}
+                                style={{ touchAction: 'none' }}
                             >
                                 <canvas ref={leftPreviewCanvasRef} className="absolute top-0 left-0 w-full h-full block pointer-events-none" aria-label="Pré-visualização interativa esquerda" />
-                                {/* Indicador de Loading */}
-                                {isLoadingLeft && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-sm font-medium pointer-events-none bg-black/50 z-[5]">
-                                        Carregando Esquerda...
-                                    </div>
-                                )}
-                                {/* Placeholder se vazio */}
-                                {!leftMediaElement && !isLoadingLeft && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none">
-                                        Lado Esquerdo Vazio
-                                    </div>
-                                )}
+                                {isLoadingLeft && (<div className="absolute inset-0 flex items-center justify-center text-gray-200 text-sm font-medium pointer-events-none bg-black/50 z-[5]"> Carregando Esquerda... </div>)}
+                                {!leftMediaElement && !isLoadingLeft && (<div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none"> Lado Esquerdo Vazio </div>)}
                             </div>
 
                             {/* Wrapper Direito Interativo */}
                             <div
-                                ref={rightInteractiveRef} // Ref para listener de wheel
-                                data-interactive-area="right" // Atributo para identificar a área no start
-                                className={cn(
-                                    "w-1/2 h-full relative bg-muted/50 flex items-center justify-center",
-                                     rightMediaElement ? (activeDrag === 'right' ? 'cursor-grabbing' : 'cursor-grab') : "cursor-default" // Cursor dinâmico
-                                )}
-                                onMouseDown={(e) => handleMouseDown(e, 'right')}
-                                onTouchStart={(e) => handleTouchStart(e, 'right')}
-                                style={{ touchAction: 'none' }} // Garante que o touch start seja capturado
+                                ref={rightInteractiveRef} data-interactive-area="right"
+                                className={cn("w-1/2 h-full relative bg-muted/50 flex items-center justify-center", rightMediaElement ? (activeDrag === 'right' ? 'cursor-grabbing' : 'cursor-grab') : "cursor-default")}
+                                onMouseDown={(e) => handleMouseDown(e, 'right')} onTouchStart={(e) => handleTouchStart(e, 'right')}
+                                style={{ touchAction: 'none' }}
                             >
                                 <canvas ref={rightPreviewCanvasRef} className="absolute top-0 left-0 w-full h-full block pointer-events-none" aria-label="Pré-visualização interativa direita" />
-                                {/* Indicador de Loading */}
-                                {isLoadingRight && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-sm font-medium pointer-events-none bg-black/50 z-[5]">
-                                         Carregando Direita...
-                                    </div>
-                                )}
-                                {/* Placeholder se vazio */}
-                                {!rightMediaElement && !isLoadingRight && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none">
-                                        Lado Direito Vazio
-                                    </div>
-                                )}
+                                {isLoadingRight && (<div className="absolute inset-0 flex items-center justify-center text-gray-200 text-sm font-medium pointer-events-none bg-black/50 z-[5]"> Carregando Direita... </div>)}
+                                {!rightMediaElement && !isLoadingRight && (<div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none"> Lado Direito Vazio </div>)}
                             </div>
 
                             {/* Overlay do Logo Interativo */}
                             {logoElement && logo && logoElement.naturalWidth > 0 && (
                                 <div
-                                    data-logo-container // Identificador para eventos
-                                    style={getLogoStyle()} // Estilos dinâmicos para posição e tamanho
-                                    onMouseDown={(e) => handleMouseDown(e, 'logo')}
-                                    onTouchStart={(e) => handleTouchStart(e, 'logo')}
-                                    role="button" // Semântica de interação
-                                    aria-label="Mover e redimensionar logo"
-                                    tabIndex={0} // Permite foco pelo teclado (opcional)
-                                    className="hover:opacity-90" // Feedback visual no hover
-                                >
-                                   {/* Conteúdo interno opcional, ou deixar vazio para usar background */}
-                                </div>
+                                    data-logo-container style={getLogoStyle()}
+                                    onMouseDown={(e) => handleMouseDown(e, 'logo')} onTouchStart={(e) => handleTouchStart(e, 'logo')}
+                                    role="button" aria-label="Mover e redimensionar logo" tabIndex={0}
+                                    className="hover:opacity-90"
+                                ></div>
                              )}
                         </div>
                     </Card>
@@ -1067,18 +938,14 @@ export default function ImageCombiner() {
                                 <Alert variant="default" className="w-full text-xs sm:text-sm p-2 sm:p-3">
                                     <AlertTriangle className="h-4 w-4" />
                                     <AlertTitle className="text-xs sm:text-sm font-semibold">Aviso Vídeo</AlertTitle>
-                                    <AlertDescription className="text-xs sm:text-sm">
-                                        Pré-visualização de vídeo mostra apenas o 1º quadro. O download final está disponível apenas para combinação de **imagens**.
-                                    </AlertDescription>
+                                    <AlertDescription className="text-xs sm:text-sm"> Pré-visualização de vídeo mostra apenas o 1º quadro. O download final está disponível apenas para combinação de **imagens**. </AlertDescription>
                                 </Alert>
                              )}
                              {saveError && (
                                 <Alert variant="destructive" className="w-full text-xs sm:text-sm p-2 sm:p-3">
                                     <AlertTriangle className="h-4 w-4" />
                                     <AlertTitle className="text-xs sm:text-sm font-semibold">Erro</AlertTitle>
-                                    <AlertDescription className="text-xs sm:text-sm">
-                                        {saveError}
-                                    </AlertDescription>
+                                    <AlertDescription className="text-xs sm:text-sm"> {saveError} </AlertDescription>
                                 </Alert>
                              )}
                         </div>
@@ -1088,24 +955,10 @@ export default function ImageCombiner() {
                             disabled={!canSave || isSaving || isLoadingLeft || isLoadingRight || isLoadingLogo}
                             className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0"
                             aria-label={canSave ? "Baixar imagem combinada" : "Carregue duas imagens válidas para poder baixar"}
-                            title={
-                                !canSave ? "Carregue uma imagem válida em ambos os lados para habilitar o download."
-                                : isSaving ? "Salvando imagem..."
-                                : (isLoadingLeft || isLoadingRight || isLoadingLogo) ? "Aguarde o carregamento das mídias..."
-                                : "Baixar imagem combinada (PNG)"
-                            }
+                            title={ !canSave ? "Carregue uma imagem válida em ambos os lados para habilitar o download." : isSaving ? "Salvando imagem..." : (isLoadingLeft || isLoadingRight || isLoadingLogo) ? "Aguarde o carregamento das mídias..." : "Baixar imagem combinada (PNG)" }
                         >
-                            {isSaving ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                                    Processando...
-                                </>
-                            ) : (
-                                <>
-                                    <Download size={18} />
-                                    Baixar Imagem
-                                </>
-                            )}
+                            {isSaving ? ( <> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div> Processando... </> )
+                                      : ( <> <Download size={18} /> Baixar Imagem </> )}
                         </Button>
                     </div>
                 </div>
@@ -1124,22 +977,13 @@ export default function ImageCombiner() {
                              <Card className="p-4">
                                 <Label htmlFor="left-zoom" className="block mb-2 font-medium flex items-center"><ZoomIn size={16} className="mr-2" /> Zoom ({leftZoom.toFixed(0)}%)</Label>
                                 <Slider
-                                    id="left-zoom"
-                                    min={10} max={500} step={1} value={[leftZoom]}
-                                    onValueChange={(v) => {
-                                        setLeftZoom(v[0]);
-                                        // Redesenha imediatamente no preview ao mudar o slider
-                                        if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-                                        animationFrameId.current = requestAnimationFrame(drawPreviewCanvases);
-                                    }}
-                                    disabled={!leftMediaElement || isLoadingLeft}
-                                    aria-label="Ajustar zoom da imagem esquerda"
+                                    id="left-zoom" min={10} max={500} step={1} value={[leftZoom]}
+                                    onValueChange={(v) => { setLeftZoom(v[0]); if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current); animationFrameId.current = requestAnimationFrame(drawPreviewCanvases); }}
+                                    disabled={!leftMediaElement || isLoadingLeft} aria-label="Ajustar zoom da imagem esquerda"
                                 />
                                 <div className="mt-4">
                                     <Label className="block mb-1 font-medium flex items-center"><Move size={16} className="mr-2" /> Posição (Foco)</Label>
                                     <p className="text-xs text-muted-foreground">Arraste a imagem na pré-visualização para ajustar o foco.</p>
-                                    {/* Opcional: Mostrar coords de foco */}
-                                    {/* <p className="text-xs text-muted-foreground mt-1">X: {leftRelativeFocus.x.toFixed(2)}, Y: {leftRelativeFocus.y.toFixed(2)}</p> */}
                                 </div>
                              </Card>
                         </TabsContent>
@@ -1149,22 +993,13 @@ export default function ImageCombiner() {
                             <Card className="p-4">
                                 <Label htmlFor="right-zoom" className="block mb-2 font-medium flex items-center"><ZoomIn size={16} className="mr-2" /> Zoom ({rightZoom.toFixed(0)}%)</Label>
                                 <Slider
-                                    id="right-zoom"
-                                    min={10} max={500} step={1} value={[rightZoom]}
-                                    onValueChange={(v) => {
-                                        setRightZoom(v[0]);
-                                        // Redesenha imediatamente no preview ao mudar o slider
-                                        if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-                                        animationFrameId.current = requestAnimationFrame(drawPreviewCanvases);
-                                     }}
-                                    disabled={!rightMediaElement || isLoadingRight}
-                                    aria-label="Ajustar zoom da imagem direita"
+                                    id="right-zoom" min={10} max={500} step={1} value={[rightZoom]}
+                                    onValueChange={(v) => { setRightZoom(v[0]); if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current); animationFrameId.current = requestAnimationFrame(drawPreviewCanvases); }}
+                                    disabled={!rightMediaElement || isLoadingRight} aria-label="Ajustar zoom da imagem direita"
                                 />
                                 <div className="mt-4">
                                     <Label className="block mb-1 font-medium flex items-center"><Move size={16} className="mr-2" /> Posição (Foco)</Label>
                                     <p className="text-xs text-muted-foreground">Arraste a imagem na pré-visualização para ajustar o foco.</p>
-                                     {/* Opcional: Mostrar coords de foco */}
-                                    {/* <p className="text-xs text-muted-foreground mt-1">X: {rightRelativeFocus.x.toFixed(2)}, Y: {rightRelativeFocus.y.toFixed(2)}</p> */}
                                </div>
                              </Card>
                         </TabsContent>
@@ -1174,10 +1009,8 @@ export default function ImageCombiner() {
                             <Card className="p-4">
                                 <Label htmlFor="logo-zoom" className="block mb-2 font-medium flex items-center"><ZoomIn size={16} className="mr-2" /> Largura Relativa ({logoZoom.toFixed(1)}%)</Label>
                                 <Slider
-                                    id="logo-zoom"
-                                    min={1} max={50} step={0.5} value={[logoZoom]}
-                                    onValueChange={(v) => setLogoZoom(v[0])} // Atualiza estilo via getLogoStyle
-                                    disabled={!logoElement || isLoadingLogo}
+                                    id="logo-zoom" min={1} max={50} step={0.5} value={[logoZoom]}
+                                    onValueChange={(v) => setLogoZoom(v[0])} disabled={!logoElement || isLoadingLogo}
                                     aria-label="Ajustar tamanho relativo do logo"
                                 />
                                 <div className="mt-4">
@@ -1187,21 +1020,17 @@ export default function ImageCombiner() {
                                         <div>
                                             <Label htmlFor="logo-pos-x" className='text-xs text-muted-foreground'>X (%)</Label>
                                             <Input
-                                                id="logo-pos-x" type="number" min={0} max={100} step={0.1}
-                                                value={logoPosition.x.toFixed(1)}
+                                                id="logo-pos-x" type="number" min={0} max={100} step={0.1} value={logoPosition.x.toFixed(1)}
                                                 onChange={(e) => setLogoPosition(p => ({ ...p, x: clamp(Number(e.target.value),0,100) }))}
-                                                disabled={!logoElement || isLoadingLogo}
-                                                aria-label="Ajustar posição horizontal do logo em porcentagem"
+                                                disabled={!logoElement || isLoadingLogo} aria-label="Ajustar posição horizontal do logo em porcentagem"
                                             />
                                         </div>
                                         <div>
                                             <Label htmlFor="logo-pos-y" className='text-xs text-muted-foreground'>Y (%)</Label>
                                             <Input
-                                                id="logo-pos-y" type="number" min={0} max={100} step={0.1}
-                                                value={logoPosition.y.toFixed(1)}
+                                                id="logo-pos-y" type="number" min={0} max={100} step={0.1} value={logoPosition.y.toFixed(1)}
                                                 onChange={(e) => setLogoPosition(p => ({ ...p, y: clamp(Number(e.target.value),0,100) }))}
-                                                disabled={!logoElement || isLoadingLogo}
-                                                aria-label="Ajustar posição vertical do logo em porcentagem"
+                                                disabled={!logoElement || isLoadingLogo} aria-label="Ajustar posição vertical do logo em porcentagem"
                                             />
                                         </div>
                                     </div>
@@ -1211,7 +1040,6 @@ export default function ImageCombiner() {
                     </Tabs>
                 </div>
             </div>
-
             {/* Seção Editor AI */}
             <div className="mt-12 md:mt-16">
                 <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">Edite sua foto com IA</h2>
