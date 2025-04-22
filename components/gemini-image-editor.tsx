@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ImageInput } from "@/components/image-input"; // Importa o componente de input de imagem
+import { MediaInput } from "@/components/media-input"; // Importa o componente de input de imagem
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from 'lucide-react'; // Ícone para o Alert
 
@@ -81,10 +81,10 @@ export function GeminiImageEditor() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Input da Imagem Fonte */}
-        <ImageInput
+        <MediaInput
           id="sourceImageGemini"
           label="Imagem Original"
-          onImageUpload={handleSourceImageUpload}
+          onMediaUpload={handleSourceImageUpload}
         />
 
         {/* Preview da Imagem Fonte (Opcional mas útil) */}

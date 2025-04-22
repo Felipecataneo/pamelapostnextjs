@@ -7,7 +7,7 @@ import { Navbar } from '@/components/navbar';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Combinador de Imagens',
+  title: 'Insta by Pâm',
   description: 'Aplicação para combinar duas imagens lado a lado com logo personalizado',
 };
 
