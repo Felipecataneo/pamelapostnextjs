@@ -273,6 +273,7 @@ export default function ImageCombiner() {
             playsInline // Important for mobile
           />
         ) : ( // Assume image otherwise
+            // eslint-disable-next-line @next/next/no-img-element
           <img
             src={mediaUrl}
             alt={altText}
@@ -348,6 +349,7 @@ export default function ImageCombiner() {
               {leftMediaType === 'video' ? (
                 <video src={leftMedia} className="w-full h-full object-contain" muted controls={false} />
               ) : (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={leftMedia} alt="Preview esquerda" className="w-full h-full object-contain" />
               )}
             </div>
@@ -370,6 +372,7 @@ export default function ImageCombiner() {
               {rightMediaType === 'video' ? (
                 <video src={rightMedia} className="w-full h-full object-contain" muted controls={false} />
               ) : (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={rightMedia} alt="Preview direita" className="w-full h-full object-contain" />
               )}
             </div>
@@ -388,6 +391,7 @@ export default function ImageCombiner() {
           />
           {logo && (
             <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden mt-2">
+                 {/* eslint-disable-next-line @next/next/no-img-element */}
              <img src={logo} alt="Preview logo" className="w-full h-full object-contain" />
             </div>
           )}
