@@ -151,7 +151,7 @@ export default function ImageCombiner() {
         const leftCtx = leftCanvas.getContext('2d'); const rightCtx = rightCanvas.getContext('2d');
         if (leftCtx) { drawMediaSection(leftCtx, leftMediaElement, 'left', containerWidth, previewHeight, leftZoom, leftRelativeFocus); } else { console.error(logPrefix + "Failed to get left preview context."); }
         if (rightCtx) { drawMediaSection(rightCtx, rightMediaElement, 'right', containerWidth, previewHeight, rightZoom, rightRelativeFocus); } else { console.error(logPrefix + "Failed to get right preview context."); }
-    }, [leftMediaElement, rightMediaElement, leftZoom, rightZoom, leftRelativeFocus, rightRelativeFocus]);
+    }, [leftMediaElement, rightMediaElement, leftZoom, rightZoom]); // Removed unnecessary dependencies
 
     // --- Efeitos de Carregamento --- (sem alterações)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -346,7 +346,7 @@ export default function ImageCombiner() {
             const currentDist = calculateDistance(e.touches[0] as Touch, e.touches[1] as Touch);
             const scale = currentDist / initialPinchDistance;
 
-            let newZoom = clamp(zoomAtPinchStart * scale, MIN_ZOOM, MAX_ZOOM);
+            const newZoom = clamp(zoomAtPinchStart * scale, MIN_ZOOM, MAX_ZOOM);
 
             if (pinchSide === 'left') {
                 setLeftZoom(newZoom);
