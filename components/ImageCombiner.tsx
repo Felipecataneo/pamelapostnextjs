@@ -338,39 +338,50 @@ export default function ImageCombiner() {
         }
     };
 
-    // --- MODIFICADO: Handler Global Touch Move (Inclui Pinch) ---
     const handleTouchMove = useCallback((e: TouchEvent) => {
         if (isPinching && e.touches.length === 2 && pinchSide) {
-            // --- Lógica de Pinch ---
+            // --- Lógica de Pinch ----
             e.preventDefault(); // ESSENCIAL para evitar zoom/scroll do navegador durante a pinça
             const currentDist = calculateDistance(e.touches[0] as Touch, e.touches[1] as Touch);
             const scale = currentDist / initialPinchDistance;
-
             const newZoom = clamp(zoomAtPinchStart * scale, MIN_ZOOM, MAX_ZOOM);
 
+            let needsRedraw = false; // Flag para redraw
             if (pinchSide === 'left') {
-                setLeftZoom(newZoom);
+                if (leftZoom !== newZoom) { // Only update state if zoom changed
+                   setLeftZoom(newZoom);
+                   needsRedraw = true;
+                }
             } else if (pinchSide === 'right') {
-                setRightZoom(newZoom);
+                 if (rightZoom !== newZoom) { // Only update state if zoom changed
+                    setRightZoom(newZoom);
+                    needsRedraw = true;
+                 }
             }
 
-            // Redesenhar imediatamente
-             if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-             animationFrameId.current = requestAnimationFrame(drawPreviewCanvases);
+            // Redesenhar apenas se o zoom mudou
+            if (needsRedraw) {
+                if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+                animationFrameId.current = requestAnimationFrame(drawPreviewCanvases);
+            }
 
         } else if (activeDrag && isTouching && e.touches.length === 1 && !isPinching) {
              // --- Lógica de Drag (1 dedo) ---
-            // e.preventDefault(); // Descomente se o drag estiver causando scroll indesejado
-            handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+             e.preventDefault(); // <<<<<<<<<<<<<<<<<<< ADICIONADO AQUI
+             handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+             // handleDragMove já chama requestAnimationFrame se necessário
+
         } else if (isPinching && e.touches.length !== 2) {
-            // Número de dedos mudou durante a pinça, talvez parar?
+            // Número de dedos mudou durante a pinça, parar
              setIsPinching(false);
              setPinchSide(null);
+             setInitialPinchDistance(0); // Reset pinch distance
         } else if (activeDrag && isTouching && e.touches.length !== 1) {
              // Número de dedos mudou durante o drag, parar o drag
              handleDragEnd();
         }
-    }, [isPinching, pinchSide, initialPinchDistance, zoomAtPinchStart, activeDrag, isTouching, handleDragMove, drawPreviewCanvases, handleDragEnd]); // Adicionadas dependências de pinça
+    // Dependencies atualizadas para incluir rightZoom se necessário e estados de pinch
+    }, [isPinching, pinchSide, initialPinchDistance, zoomAtPinchStart, activeDrag, isTouching, handleDragMove, drawPreviewCanvases, handleDragEnd, leftZoom, rightZoom]); 
 
     // --- MODIFICADO: Handler Global Touch End/Cancel (Inclui Pinch) ---
     const handleTouchEnd = useCallback((e: TouchEvent) => {
